@@ -37,7 +37,16 @@ I dettagli dei payload, degli errori JSON, degli status HTTP, della configurazio
 - Backend: `mvn test` (dalla cartella `backend`).
 - Build frontend: `npm run build`.
 
-I test backend coprono autenticazione, autorizzazioni, validazione e atomicità dei trasferimenti; quelli frontend verificano accesso, token e gestione degli errori.
+I test backend di integrazione coprono:
+
+- credenziali demo, password hash, campi login obbligatori e risposta senza dati privati;
+- autenticazione obbligatoria, token non valido e isolamento cliente per conti e movimenti;
+- filtri data inclusivi, singoli o combinati, formati non validi e ordinamento più recente-prima;
+- trasferimenti esatti con movimenti accoppiati, riferimento condiviso e rollback effettivo se fallisce l'inserimento del secondo movimento;
+- importi zero, negativi o con più di due decimali, campi mancanti, conti uguali/inesistenti/non autorizzati e fondi insufficienti;
+- invarianza di saldi e movimenti quando il trasferimento viene rifiutato, inclusi incompatibilità valuta, saldo insufficiente e superamento del saldo massimo.
+
+I test frontend verificano schermata e invio login, ripristino sessione, caricamento con token, filtri, invio/conferma trasferimento, aggiornamento saldi, errori API senza perdita di stato, sessione scaduta e logout.
 
 ## CI/CD con GitHub Actions
 

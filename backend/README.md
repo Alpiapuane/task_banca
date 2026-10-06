@@ -62,4 +62,11 @@ The ORM generates the physical schema from the entity mappings at startup. Seed 
 
 ## Validation
 
-Run `mvn test` from this directory. Integration tests use an in-memory H2 database in MySQL compatibility mode and cover credential checks, protected routes, account isolation, date-range validation, exact transfer arithmetic, and rollback/no-write behavior for invalid and insufficient-funds transfers.
+Run `mvn test` from this directory. Integration tests use an in-memory H2 database in MySQL compatibility mode and cover:
+
+- valid and invalid credentials, bcrypt password hashes, required login fields, invalid bearer tokens, and unauthenticated requests;
+- per-customer account and movement authorization, including nonexistent and foreign-owned account IDs;
+- movement ranges with both bounds, either bound alone, inclusive start/end calendar days, malformed/reversed dates, and newest-first ordering;
+- exact transfer arithmetic, paired debit/credit movements with one shared reference, and response fields;
+- rejected transfers for missing fields, zero/negative/over-precision amounts, missing/equal/foreign accounts, insufficient funds, currency mismatch, and destination balance overflow;
+- unchanged balances and movement counts after rejected transfers, and a simulated database failure on the second movement insert to verify rollback of the first insert and both balance updates.

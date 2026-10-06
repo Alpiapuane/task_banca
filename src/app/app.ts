@@ -1,7 +1,12 @@
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
+import localeIt from '@angular/common/locales/it';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+
+import { registerLocaleData } from '@angular/common';
+
+registerLocaleData(localeIt);
 
 interface Account {
   id: number | string;
@@ -25,7 +30,7 @@ interface Movement {
   selector: 'app-root',
   standalone: true,
   imports: [CommonModule, FormsModule, CurrencyPipe, DatePipe],
-  templateUrl: './app.html'
+  templateUrl: './app.html',
 })
 export class App implements OnInit {
   readonly accounts = signal<Account[]>([]);
@@ -73,24 +78,27 @@ export class App implements OnInit {
   login(): void {
     this.error.set('');
     this.loading.set(true);
-    this.http.post<Record<string, unknown>>('/api/auth/login', {
-      username: this.username.trim(),
-      password: this.password
-    }).subscribe({
-      next: (response) => {
-        const token = String(response['token'] ?? response['accessToken'] ?? '');
-        if (!token) {
-          this.error.set('La risposta di accesso non contiene un token valido.');
-          this.loading.set(false);
-          return;
-        }
-        this.token.set(token);
-        this.userName.set(String(response['username'] ?? this.username));
-        sessionStorage.setItem('demo-token', token);
-        this.loadAccounts();
-      },
-      error: (error: HttpErrorResponse) => this.fail(error, 'Accesso non riuscito. Controlla le credenziali demo.')
-    });
+    this.http
+      .post<Record<string, unknown>>('/api/auth/login', {
+        username: this.username.trim(),
+        password: this.password,
+      })
+      .subscribe({
+        next: (response) => {
+          const token = String(response['token'] ?? response['accessToken'] ?? '');
+          if (!token) {
+            this.error.set('La risposta di accesso non contiene un token valido.');
+            this.loading.set(false);
+            return;
+          }
+          this.token.set(token);
+          this.userName.set(String(response['username'] ?? this.username));
+          sessionStorage.setItem('demo-token', token);
+          this.loadAccounts();
+        },
+        error: (error: HttpErrorResponse) =>
+          this.fail(error, 'Accesso non riuscito. Controlla le credenziali demo.'),
+      });
   }
 
   logout(): void {
@@ -111,9 +119,11 @@ export class App implements OnInit {
       next: (items) => {
         this.accounts.set((items ?? []).map((item) => this.toAccount(item)));
         this.loading.set(false);
-        if (this.accounts().length === 0) this.notice.set('Non ci sono conti associati a questo profilo.');
+        if (this.accounts().length === 0)
+          this.notice.set('Non ci sono conti associati a questo profilo.');
       },
-      error: (error: HttpErrorResponse) => this.fail(error, 'Non è stato possibile caricare i conti.')
+      error: (error: HttpErrorResponse) =>
+        this.fail(error, 'Non è stato possibile caricare i conti.'),
     });
   }
 
@@ -133,16 +143,19 @@ export class App implements OnInit {
     const params: Record<string, string> = {};
     if (this.fromDate) params['from'] = this.fromDate;
     if (this.toDate) params['to'] = this.toDate;
-    this.http.get<unknown[]>(`/api/accounts/${encodeURIComponent(String(accountId))}/movements`, {
-      headers: this.authHeaders(),
-      params
-    }).subscribe({
-      next: (items) => {
-        this.movements.set((items ?? []).map((item) => this.toMovement(item)));
-        this.loading.set(false);
-      },
-      error: (error: HttpErrorResponse) => this.fail(error, 'Non è stato possibile caricare i movimenti.')
-    });
+    this.http
+      .get<unknown[]>(`/api/accounts/${encodeURIComponent(String(accountId))}/movements`, {
+        headers: this.authHeaders(),
+        params,
+      })
+      .subscribe({
+        next: (items) => {
+          this.movements.set((items ?? []).map((item) => this.toMovement(item)));
+          this.loading.set(false);
+        },
+        error: (error: HttpErrorResponse) =>
+          this.fail(error, 'Non è stato possibile caricare i movimenti.'),
+      });
   }
 
   openTransfer(): void {
@@ -163,23 +176,31 @@ export class App implements OnInit {
       return;
     }
     this.submitting.set(true);
-    this.http.post('/api/transfers', {
-      sourceAccountId: this.sourceAccountId,
-      destinationAccountId: this.targetAccountId,
-      amount: this.transferAmount
-    }, { headers: this.authHeaders() }).subscribe({
-      next: () => {
-        this.submitting.set(false);
-        this.confirmTransfer = false;
-        this.notice.set('Trasferimento simulato completato. I saldi e i movimenti sono stati aggiornati.');
-        this.view.set('dashboard');
-        this.loadAccounts();
-      },
-      error: (error: HttpErrorResponse) => {
-        this.submitting.set(false);
-        this.fail(error, 'Trasferimento non riuscito. Nessuna modifica è stata salvata.');
-      }
-    });
+    this.http
+      .post(
+        '/api/transfers',
+        {
+          sourceAccountId: this.sourceAccountId,
+          destinationAccountId: this.targetAccountId,
+          amount: this.transferAmount,
+        },
+        { headers: this.authHeaders() },
+      )
+      .subscribe({
+        next: () => {
+          this.submitting.set(false);
+          this.confirmTransfer = false;
+          this.notice.set(
+            'Trasferimento simulato completato. I saldi e i movimenti sono stati aggiornati.',
+          );
+          this.view.set('dashboard');
+          this.loadAccounts();
+        },
+        error: (error: HttpErrorResponse) => {
+          this.submitting.set(false);
+          this.fail(error, 'Trasferimento non riuscito. Nessuna modifica è stata salvata.');
+        },
+      });
   }
 
   backToDashboard(): void {
@@ -189,8 +210,18 @@ export class App implements OnInit {
 
   movementLabel(type: string): string {
     const normalized = type.toUpperCase();
-    if (normalized.includes('DEPOSIT') || normalized.includes('CREDIT') || normalized.includes('IN')) return 'Entrata';
-    if (normalized.includes('WITHDRAW') || normalized.includes('DEBIT') || normalized.includes('OUT')) return 'Uscita';
+    if (
+      normalized.includes('DEPOSIT') ||
+      normalized.includes('CREDIT') ||
+      normalized.includes('IN')
+    )
+      return 'Entrata';
+    if (
+      normalized.includes('WITHDRAW') ||
+      normalized.includes('DEBIT') ||
+      normalized.includes('OUT')
+    )
+      return 'Uscita';
     return type;
   }
 
@@ -206,11 +237,15 @@ export class App implements OnInit {
     const item = value as Record<string, unknown>;
     return {
       id: (item['id'] ?? item['accountId'] ?? '') as number | string,
-      code: String(item['iban'] ?? item['code'] ?? item['accountCode'] ?? item['accountNumber'] ?? ''),
+      code: String(
+        item['iban'] ?? item['code'] ?? item['accountCode'] ?? item['accountNumber'] ?? '',
+      ),
       label: String(item['label'] ?? item['name'] ?? 'Conto demo'),
-      holder: String(item['holder'] ?? item['accountHolder'] ?? item['ownerName'] ?? this.userName()),
+      holder: String(
+        item['holder'] ?? item['accountHolder'] ?? item['ownerName'] ?? this.userName(),
+      ),
       currency: String(item['currency'] ?? 'EUR'),
-      balance: Number(item['balance'] ?? 0)
+      balance: Number(item['balance'] ?? 0),
     };
   }
 
@@ -218,11 +253,13 @@ export class App implements OnInit {
     const item = value as Record<string, unknown>;
     return {
       id: (item['id'] ?? '') as number | string,
-      happenedAt: String(item['occurredAt'] ?? item['happenedAt'] ?? item['dateTime'] ?? item['date'] ?? ''),
+      happenedAt: String(
+        item['occurredAt'] ?? item['happenedAt'] ?? item['dateTime'] ?? item['date'] ?? '',
+      ),
       description: String(item['description'] ?? ''),
       type: String(item['type'] ?? ''),
       amount: Number(item['amount'] ?? 0),
-      transferReference: String(item['transferReference'] ?? item['transferId'] ?? '')
+      transferReference: String(item['transferReference'] ?? item['transferId'] ?? ''),
     };
   }
 

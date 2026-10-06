@@ -1,0 +1,72 @@
+name: CI/CD Conto Chiaro
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: conto-chiaro-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend Angular
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run frontend tests
+        run: npm test -- --watch=false
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Upload Angular build
+        uses: actions/upload-artifact@v4
+        with:
+          name: conto-chiaro-frontend
+          path: dist/task_01/browser/
+          if-no-files-found: error
+          retention-days: 14
+
+  backend:
+    name: Backend Spring Boot
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - name: Test and package backend
+        working-directory: backend
+        run: mvn --batch-mode --no-transfer-progress verify
+
+      - name: Upload Spring Boot package
+        uses: actions/upload-artifact@v4
+        with:
+          name: conto-chiaro-backend
+          path: backend/target/*.jar
+          if-no-files-found: error
+          retention-days: 14

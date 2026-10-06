@@ -1,0 +1,129 @@
+@if (!signedIn) {
+  <main class="login-shell">
+    <section class="login-brand">
+      <a class="brand" href="/" aria-label="Conto Chiaro, home">
+        <span class="brand-mark">C</span><span>conto<span class="brand-light">chiaro</span></span>
+      </a>
+      <div class="brand-copy">
+        <span class="eyebrow">IL TUO SPAZIO, IN CHIARO</span>
+        <h1>Una visione semplice<br>dei tuoi risparmi.</h1>
+        <p>Conti, movimenti e trasferimenti simulati: tutto quello che ti serve, senza complicazioni.</p>
+      </div>
+      <div class="login-note"><span class="note-icon">✳</span><span>Ambiente dimostrativo<br><small>Nessuna operazione bancaria reale</small></span></div>
+    </section>
+    <section class="login-panel">
+      <div class="login-card">
+        <span class="eyebrow">BENTORNATO</span>
+        <h2>Accedi al tuo spazio</h2>
+        <p class="muted">Inserisci le credenziali demo per continuare.</p>
+        <form (ngSubmit)="login()">
+          <label for="username">Nome utente</label>
+          <div class="input-wrap"><span class="input-icon">＠</span><input id="username" name="username" type="text" [(ngModel)]="username" autocomplete="username" required></div>
+          <label for="password">Password</label>
+          <div class="input-wrap"><span class="input-icon">⌑</span><input id="password" name="password" type="password" [(ngModel)]="password" autocomplete="current-password" required></div>
+          <button class="button button-primary login-button" type="submit" [disabled]="loading()">{{ loading() ? 'Accesso in corso…' : 'Accedi' }} <span>→</span></button>
+        </form>
+        @if (error()) { <div class="alert alert-error" role="alert">{{ error() }}</div> }
+        <div class="demo-credentials"><span class="demo-dot"></span><div><strong>Credenziali demo</strong><small>alice · Demo1234!</small></div></div>
+        <p class="privacy-copy">I dati mostrati sono esclusivamente dimostrativi.</p>
+      </div>
+    </section>
+  </main>
+} @else {
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#" (click)="$event.preventDefault(); backToDashboard()"><span class="brand-mark">C</span><span>conto<span class="brand-light">chiaro</span></span></a>
+      <div class="workspace-label">IL TUO SPAZIO</div>
+      <nav aria-label="Navigazione principale">
+        <button class="nav-item" [class.active]="view() === 'dashboard' || view() === 'account'" (click)="backToDashboard()"><span class="nav-icon">▦</span> Panoramica</button>
+        <button class="nav-item" [class.active]="view() === 'transfer'" (click)="openTransfer()"><span class="nav-icon">↗</span> Trasferimento</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="safe-card"><span class="safe-icon">✓</span><strong>Ambiente sicuro</strong><p>Questa è una simulazione. Non vengono eseguite operazioni bancarie reali.</p></div>
+        <button class="profile" (click)="logout()"><span class="avatar">{{ (userName() || username).slice(0, 1).toUpperCase() }}</span><span class="profile-text"><strong>{{ userName() || username }}</strong><small>Area demo</small></span><span class="logout-icon">↪</span></button>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <div class="mobile-brand"><span class="brand-mark">C</span> contochiaro</div>
+        <div class="breadcrumb"><span>Area personale</span><span class="crumb-separator">/</span><strong>{{ view() === 'account' ? 'Dettaglio conto' : view() === 'transfer' ? 'Trasferimento' : 'Panoramica' }}</strong></div>
+        <div class="topbar-right"><span class="demo-badge"><i></i> Modalità demo</span><button class="icon-button" aria-label="Esci dall'account" title="Esci" (click)="logout()">↪</button></div>
+      </header>
+
+      <div class="content">
+        @if (error()) { <div class="alert alert-error" role="alert"><span>!</span>{{ error() }}<button aria-label="Chiudi messaggio" (click)="error.set('')">×</button></div> }
+        @if (notice()) { <div class="alert alert-success" role="status"><span>✓</span>{{ notice() }}<button aria-label="Chiudi messaggio" (click)="notice.set('')">×</button></div> }
+
+        @if (view() === 'dashboard') {
+          <section class="page-heading">
+            <div><span class="eyebrow">IL TUO RIEPILOGO PERSONALE</span><h1>Buongiorno, {{ welcomeName }} <span class="wave">✳</span></h1><p>Ecco una panoramica aggiornata dei tuoi conti.</p></div>
+            <button class="button button-primary" (click)="openTransfer()" [disabled]="accounts().length < 2"><span class="button-plus">↗</span> Nuovo trasferimento</button>
+          </section>
+          <section class="summary-grid">
+            <article class="summary-card balance-card"><div class="card-label">Patrimonio totale <span class="mini-icon">◉</span></div><strong class="total-balance">{{ totalBalance | currency:'EUR':'symbol':'1.2-2':'it-IT' }}</strong><div class="balance-caption"><span class="positive-tag">●</span> Saldo complessivo disponibile</div><div class="balance-decoration"></div></article>
+            <article class="summary-card"><div class="card-label">Conti attivi <span class="small-card-icon icon-lilac">▤</span></div><strong class="summary-value">{{ accounts().length }}<small> conti</small></strong><p>Conti intestati a te</p><div class="account-dots"><i></i><i></i><i></i></div></article>
+            <article class="summary-card"><div class="card-label">Valuta principale <span class="small-card-icon icon-mint">€</span></div><strong class="summary-value">Euro <small>EUR</small></strong><p>Tutti i tuoi conti in un'unica vista</p><span class="currency-symbol">€</span></article>
+          </section>
+          <section class="section-heading"><div><span class="eyebrow">IL TUO DENARO</span><h2>I tuoi conti <span class="count-pill">{{ accounts().length }}</span></h2></div><span class="section-hint">Seleziona un conto per vedere i movimenti</span></section>
+          @if (loading()) { <div class="loading-state"><span class="spinner"></span>Caricamento dei tuoi conti…</div> }
+          @else if (accounts().length === 0) { <div class="empty-state"><span class="empty-icon">▤</span><strong>Nessun conto disponibile</strong><p>Non risultano conti associati al tuo profilo demo.</p></div> }
+          @else {
+            <section class="accounts-grid">
+              @for (account of accounts(); track account.id; let index = $index) {
+                <button class="account-card" [class.account-card-green]="index === 1" (click)="openAccount(account)">
+                  <div class="account-card-top"><span class="account-type">{{ account.label }}</span><span class="account-arrow">↗</span></div>
+                  <div class="account-holder"><span class="account-avatar" [class.avatar-green]="index === 1">{{ account.holder.slice(0, 1).toUpperCase() }}</span><span><strong>{{ account.holder }}</strong><small>{{ account.code }}</small></span></div>
+                  <div class="account-balance-label">Saldo disponibile</div>
+                  <div class="account-balance">{{ account.balance | currency:account.currency:'symbol':'1.2-2':'it-IT' }}</div>
+                  <div class="account-card-footer"><span><i class="currency-dot"></i> {{ account.currency }}</span><span>Vedi movimenti <b>→</b></span></div>
+                </button>
+              }
+            </section>
+          }
+          <footer class="page-foot"><span>Conto Chiaro <b>·</b> Dashboard</span><span>Demo a scopo didattico <b>·</b> Dati simulati</span></footer>
+        }
+
+        @if (view() === 'account') {
+          <button class="back-link" (click)="backToDashboard()">← Torna ai conti</button>
+          <section class="page-heading detail-heading"><div><span class="eyebrow">DETTAGLIO CONTO</span><h1>{{ selectedAccount?.label }}</h1><p>{{ selectedAccount?.code }} <span class="separator">·</span> {{ selectedAccount?.holder }} <span class="separator">·</span> {{ selectedAccount?.currency }}</p></div><div class="detail-balance"><small>Saldo attuale</small><strong>{{ selectedAccount?.balance | currency:selectedAccount?.currency:'symbol':'1.2-2':'it-IT' }}</strong></div></section>
+          <section class="transactions-panel">
+            <div class="transactions-header"><div><h2>Movimenti</h2><p>Le attività più recenti del tuo conto</p></div><div class="filters"><label>Dal <input type="date" [(ngModel)]="fromDate" aria-label="Data iniziale"></label><label>Al <input type="date" [(ngModel)]="toDate" aria-label="Data finale"></label><button class="button button-filter" (click)="loadMovements()">Filtra</button></div></div>
+            @if (loading()) { <div class="loading-state"><span class="spinner"></span>Caricamento movimenti…</div> }
+            @else if (movements().length === 0) { <div class="empty-state"><span class="empty-icon">↔</span><strong>Nessun movimento trovato</strong><p>Prova a modificare l'intervallo di date.</p></div> }
+            @else {
+              <div class="movement-list">
+                @for (movement of movements(); track movement.id) {
+                  <article class="movement-row"><span class="movement-icon" [class.icon-in]="isCredit(movement.type)">{{ isCredit(movement.type) ? '↙' : '↗' }}</span><div class="movement-description"><strong>{{ movement.description }}</strong><small>{{ movement.happenedAt | date:'dd MMM yyyy, HH:mm':'':'it-IT' }} <span>·</span> {{ movementLabel(movement.type) }}</small></div><span class="movement-type" [class.type-in]="isCredit(movement.type)">{{ movementLabel(movement.type) }}</span><strong class="movement-amount" [class.amount-in]="isCredit(movement.type)">{{ isCredit(movement.type) ? '+' : '−' }}{{ movement.amount | currency:selectedAccount?.currency:'symbol':'1.2-2':'it-IT' }}</strong></article>
+                }
+              </div>
+            }
+          </section>
+        }
+
+        @if (view() === 'transfer') {
+          <button class="back-link" (click)="backToDashboard()">← Torna alla panoramica</button>
+          <section class="page-heading"><div><span class="eyebrow">SPOSTA DENARO</span><h1>Nuovo trasferimento</h1><p>Simula uno spostamento tra due conti intestati a te.</p></div></section>
+          <section class="transfer-layout">
+            <form class="transfer-panel" (ngSubmit)="submitTransfer()">
+              <div class="form-section-title"><span class="step-number">01</span><div><strong>Imposta il trasferimento</strong><small>Scegli i conti e l'importo da trasferire</small></div></div>
+              <label for="source">Da quale conto</label>
+              <select id="source" name="source" [(ngModel)]="sourceAccountId" required>
+                @for (account of accounts(); track account.id) { <option [ngValue]="account.id">{{ account.code }} · {{ account.balance | currency:account.currency:'symbol':'1.2-2':'it-IT' }}</option> }
+              </select>
+              <div class="transfer-swap">↓</div>
+              <label for="target">A quale conto</label>
+              <select id="target" name="target" [(ngModel)]="targetAccountId" required>
+                @for (account of accounts(); track account.id) { <option [ngValue]="account.id" [disabled]="account.id === sourceAccountId">{{ account.code }} · {{ account.holder }}</option> }
+              </select>
+              <div class="form-two-columns"><div><label for="amount">Importo</label><div class="amount-input"><span>€</span><input id="amount" name="amount" type="number" min="0.01" step="0.01" [(ngModel)]="transferAmount" placeholder="0,00" required></div></div></div>
+              <label class="confirm-check"><input type="checkbox" name="confirm" [(ngModel)]="confirmTransfer"><span>Confermo i dati. Ho capito che si tratta di una simulazione.</span></label>
+              <button class="button button-primary transfer-submit" type="submit" [disabled]="submitting() || accounts().length < 2">{{ submitting() ? 'Elaborazione…' : 'Conferma trasferimento' }} <span>→</span></button>
+            </form>
+            <aside class="transfer-info"><span class="info-icon">✳</span><h3>Prima di confermare</h3><p>I trasferimenti sono simulati a solo scopo didattico. Non verrà spostato denaro reale.</p><div class="info-divider"></div><div class="info-line"><span>⏱</span><span><strong>Immediato</strong><small>Saldo aggiornato alla conferma</small></span></div><div class="info-line"><span>⇄</span><span><strong>Tra i tuoi conti</strong><small>Solo conti intestati a te</small></span></div><div class="info-line"><span>✓</span><span><strong>Sempre verificabile</strong><small>Il movimento sarà registrato nello storico</small></span></div></aside>
+          </section>
+        }
+      </div>
+    </main>
+  </div>
+}
